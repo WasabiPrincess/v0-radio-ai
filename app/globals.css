@@ -1,0 +1,145 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* メインカラーを#22a790（ティール系）に変更、背景を#eef4f4に */
+  --background: #eef4f4;
+  --foreground: oklch(0.15 0 0);
+  --card: #eef4f4;
+  --card-foreground: oklch(0.15 0 0);
+  --popover: #eef4f4;
+  --popover-foreground: oklch(0.15 0 0);
+  --primary: #22a790;
+  --primary-foreground: #ffffff;
+  --secondary: #d4e8e5;
+  --secondary-foreground: #1a5c52;
+  --muted: #d4e8e5;
+  --muted-foreground: #4a7a73;
+  --accent: #a8d5cf;
+  --accent-foreground: #1a5c52;
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: #ffffff;
+  --border: #a8d5cf;
+  --input: #a8d5cf;
+  --ring: #22a790;
+  --chart-1: #22a790;
+  --chart-2: #3bb8a3;
+  --chart-3: #1a8a76;
+  --chart-4: #5ccfbb;
+  --chart-5: #147a68;
+  --radius: 0.75rem;
+  --sidebar: #e0f0ed;
+  --sidebar-foreground: oklch(0.15 0 0);
+  --sidebar-primary: #22a790;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #a8d5cf;
+  --sidebar-accent-foreground: #1a5c52;
+  --sidebar-border: #a8d5cf;
+  --sidebar-ring: #22a790;
+  /* グラデーションカラーをティール系に */
+  --radio-teal: #22a790;
+  --radio-teal-light: #3bb8a3;
+  --radio-teal-dark: #1a7a68;
+  --radio-gradient-start: #3bb8a3;
+  --radio-gradient-end: #1a5c52;
+}
+
+.dark {
+  --background: #0a1f1c;
+  --foreground: oklch(0.95 0.02 170);
+  --card: #0a1f1c;
+  --card-foreground: oklch(0.95 0.02 170);
+  --popover: #0a1f1c;
+  --popover-foreground: oklch(0.95 0.02 170);
+  --primary: #3bb8a3;
+  --primary-foreground: #0a1f1c;
+  --secondary: #1a3d36;
+  --secondary-foreground: #a8d5cf;
+  --muted: #1a3d36;
+  --muted-foreground: #6fa89e;
+  --accent: #2a4d46;
+  --accent-foreground: #a8d5cf;
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.95 0.02 170);
+  --border: #2a4d46;
+  --input: #2a4d46;
+  --ring: #3bb8a3;
+  --sidebar: #0f2925;
+  --sidebar-foreground: oklch(0.95 0.02 170);
+  --sidebar-primary: #3bb8a3;
+  --sidebar-primary-foreground: #0a1f1c;
+  --sidebar-accent: #2a4d46;
+  --sidebar-accent-foreground: #a8d5cf;
+  --sidebar-border: #2a4d46;
+  --sidebar-ring: #3bb8a3;
+  --radio-teal: #3bb8a3;
+  --radio-teal-light: #5ccfbb;
+  --radio-teal-dark: #22a790;
+  --radio-gradient-start: #3bb8a3;
+  --radio-gradient-end: #1a5c52;
+}
+
+@theme inline {
+  --font-sans: var(--v0-font-noto-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-radio-teal: var(--radio-teal);
+  --color-radio-teal-light: var(--radio-teal-light);
+  --color-radio-teal-dark: var(--radio-teal-dark);
+  --color-radio-gradient-start: var(--radio-gradient-start);
+  --color-radio-gradient-end: var(--radio-gradient-end);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.radio-gradient {
+  background: linear-gradient(135deg, var(--color-radio-gradient-start), var(--color-radio-gradient-end));
+}
+
+.radio-gradient-subtle {
+  background: linear-gradient(135deg, var(--color-radio-gradient-start), transparent);
+}
