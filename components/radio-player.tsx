@@ -104,6 +104,7 @@ export function RadioPlayer({
     emotion,
     setEmotion,
     stop: stopSpeaking,
+    isUnlocked,
   } = useTextToSpeech()
 
   const getStateText = () => {
@@ -245,6 +246,9 @@ export function RadioPlayer({
             </span>
             <span className={isTTSSupported ? "text-[#22a790]" : "text-red-500"}>
               音声合成: {isTTSSupported ? "対応" : "非対応"}
+            </span>
+            <span className={isUnlocked ? "text-[#22a790]" : "text-orange-500"}>
+              音声: {isUnlocked ? "有効" : "未初期化"}
             </span>
           </div>
         </Card>
