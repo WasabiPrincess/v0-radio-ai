@@ -21,7 +21,7 @@ export function useRadioConversation() {
     userName,
     setUserName,
   } = useAIChat()
-  const { speak, isSpeaking, stop: stopSpeaking } = useTextToSpeech()
+  const { speak, isSpeaking, stop: stopSpeaking, unlockAudio, isUnlocked } = useTextToSpeech()
   const {
     isListening,
     transcript,
@@ -239,6 +239,7 @@ export function useRadioConversation() {
 
     // 音声合成関連
     isSpeaking,
+    isUnlocked,
 
     // 操作
     toggleOnAir,
@@ -253,5 +254,6 @@ export function useRadioConversation() {
     setUserName,
     userName,
     startConversation, // 新しく追加した関数をエクスポート
+    unlockAudio, // 音声アンロック関数をエクスポート
   }
 }
