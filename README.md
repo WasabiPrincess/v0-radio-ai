@@ -28,3 +28,14 @@ Continue building your app on:
 2. Deploy your chats from the v0 interface
 3. Changes are automatically pushed to this repository
 4. Vercel deploys the latest version from this repository
+
+## Environment Variables
+
+Server-side TTS uses the Gemini API speech generation endpoint. Set these in your deployment or local environment:
+
+- `GEMINI_API_KEY` (required)
+- `GEMINI_CHAT_MODEL` (optional, default: `gemini-2.5-flash`)
+- `GEMINI_TTS_MODEL` (optional, default: `gemini-2.5-flash-preview-tts`)
+- `GEMINI_TTS_VOICE_NAME` (optional, default: `Kore`)
+
+`GOOGLE_CLOUD_CREDENTIALS` is not used for Gemini API TTS or chat.

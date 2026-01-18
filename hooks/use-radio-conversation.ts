@@ -1,14 +1,15 @@
 "use client"
 
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useState, useCallback, useRef, useEffect, useMemo } from "react"
 import { useAIChat } from "./use-ai-chat"
 import { useTextToSpeech } from "./use-text-to-speech"
 import { useSpeechRecognition } from "./use-speech-recognition"
+import type { ConversationMode, ConversationState } from "@/types/conversation"
 
 export function useRadioConversation() {
   const [isOnAir, setIsOnAir] = useState(false)
   const [isActive, setIsActive] = useState(false)
-  const [conversationMode, setConversationMode] = useState<"manual" | "auto">("manual")
+  const [conversationMode, setConversationMode] = useState<ConversationMode>("manual")
   const [autoListenDelay, setAutoListenDelay] = useState(2000) // 2秒後に自動で音声認識開始
 
   const {
@@ -21,7 +22,15 @@ export function useRadioConversation() {
     userName,
     setUserName,
   } = useAIChat()
-  const { speak, isSpeaking, stop: stopSpeaking, unlockAudio, isUnlocked } = useTextToSpeech()
+  const {
+    speak,
+    isSpeaking,
+    stop: stopSpeaking,
+    unlockAudio,
+    isUnlocked,
+    isSupported: isTTSSupported,
+    needsUnlock: ttsNeedsUnlock,
+  } = useTextToSpeech()
   const {
     isListening,
     transcript,
@@ -34,20 +43,27 @@ export function useRadioConversation() {
   } = useSpeechRecognition()
 
   const autoListenTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const conversationStateRef = useRef<"idle" | "listening" | "processing" | "speaking">("idle")
+  const conversationStateRef = useRef<ConversationState>("idle")
 
-  // 会話状態の更新
-  useEffect(() => {
-    if (isListening) {
-      conversationStateRef.current = "listening"
-    } else if (isAILoading) {
-      conversationStateRef.current = "processing"
-    } else if (isSpeaking) {
-      conversationStateRef.current = "speaking"
-    } else {
-      conversationStateRef.current = "idle"
-    }
+  const conversationState = useMemo<ConversationState>(() => {
+    if (isListening) return "listening"
+    if (isAILoading) return "processing"
+    if (isSpeaking) return "speaking"
+    return "idle"
   }, [isListening, isAILoading, isSpeaking])
+
+  useEffect(() => {
+    conversationStateRef.current = conversationState
+  }, [conversationState])
+  const stopAll = useCallback(() => {
+    stopListening()
+    stopSpeaking()
+    if (autoListenTimeoutRef.current) {
+      clearTimeout(autoListenTimeoutRef.current)
+      autoListenTimeoutRef.current = null
+    }
+  }, [stopListening, stopSpeaking])
+
 
   // 自動モードでの音声認識開始
   const scheduleAutoListen = useCallback(() => {
@@ -120,19 +136,14 @@ export function useRadioConversation() {
     setIsActive(!isActive)
     if (isActive) {
       // 会話停止
-      stopListening()
-      stopSpeaking()
-      if (autoListenTimeoutRef.current) {
-        clearTimeout(autoListenTimeoutRef.current)
-        autoListenTimeoutRef.current = null
-      }
+      stopAll()
     } else {
       // 会話開始
       if (conversationMode === "auto") {
         scheduleAutoListen()
       }
     }
-  }, [isActive, stopListening, stopSpeaking, conversationMode, scheduleAutoListen])
+  }, [isActive, stopAll, conversationMode, scheduleAutoListen])
 
   const playInitialMessage = useCallback(() => {
     console.log("[v0] playInitialMessage呼び出し - messages数:", messages.length)
@@ -160,30 +171,20 @@ export function useRadioConversation() {
     if (!newOnAirState) {
       // 番組終了 - 全て停止
       setIsActive(false)
-      stopListening()
-      stopSpeaking()
-      if (autoListenTimeoutRef.current) {
-        clearTimeout(autoListenTimeoutRef.current)
-        autoListenTimeoutRef.current = null
-      }
+      stopAll()
     }
-  }, [isOnAir, stopListening, stopSpeaking])
+  }, [isOnAir, stopAll])
 
   // 緊急停止
   const emergencyStop = useCallback(() => {
     setIsActive(false)
     setIsOnAir(false)
-    stopListening()
-    stopSpeaking()
-    if (autoListenTimeoutRef.current) {
-      clearTimeout(autoListenTimeoutRef.current)
-      autoListenTimeoutRef.current = null
-    }
-  }, [stopListening, stopSpeaking])
+    stopAll()
+  }, [stopAll])
 
   // 会話モードの切り替え
   const setMode = useCallback(
-    (mode: "manual" | "auto") => {
+    (mode: ConversationMode) => {
       setConversationMode(mode)
       if (mode === "auto" && isActive && conversationStateRef.current === "idle") {
         scheduleAutoListen()
@@ -222,7 +223,7 @@ export function useRadioConversation() {
     isOnAir,
     isActive,
     conversationMode,
-    conversationState: conversationStateRef.current,
+    conversationState,
     autoListenDelay,
 
     // 音声認識関連
@@ -240,6 +241,8 @@ export function useRadioConversation() {
     // 音声合成関連
     isSpeaking,
     isUnlocked,
+    isTTSSupported,
+    ttsNeedsUnlock,
 
     // 操作
     toggleOnAir,

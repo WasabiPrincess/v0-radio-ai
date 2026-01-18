@@ -41,6 +41,24 @@ export function useSpeechRecognition() {
 
   const recognitionRef = useRef<SpeechRecognition | null>(null)
 
+  const mapSpeechError = useCallback((code: string) => {
+    switch (code) {
+      case "not-allowed":
+      case "service-not-allowed":
+        return "マイクの使用が許可されていません"
+      case "no-speech":
+        return "音声が検出できませんでした"
+      case "audio-capture":
+        return "マイクが見つかりません"
+      case "network":
+        return "音声認識のネットワークエラーが発生しました"
+      case "aborted":
+        return "音声認識が中断されました"
+      default:
+        return `音声認識エラー: ${code}`
+    }
+  }, [])
+
   useEffect(() => {
     // ブラウザがSpeech Recognition APIをサポートしているかチェック
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -81,7 +99,7 @@ export function useSpeechRecognition() {
       }
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        setError(`音声認識エラー: ${event.error}`)
+        setError(mapSpeechError(event.error))
         setIsListening(false)
       }
     } else {
@@ -94,14 +112,19 @@ export function useSpeechRecognition() {
         recognitionRef.current.abort()
       }
     }
-  }, [])
+  }, [mapSpeechError])
 
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
       setTranscript("")
       setInterimTranscript("")
       setError(null)
-      recognitionRef.current.start()
+      try {
+        recognitionRef.current.start()
+      } catch (err) {
+        setError("音声認識の開始に失敗しました")
+        setIsListening(false)
+      }
     }
   }, [isListening])
 

@@ -6,11 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider"
 import { Play, Pause, Square, Settings2 } from "lucide-react"
 import { useState } from "react"
+import type { ConversationMode, ConversationState } from "@/types/conversation"
 
 interface ConversationControlsProps {
   isActive: boolean
-  conversationMode: "manual" | "auto"
-  conversationState: "idle" | "listening" | "processing" | "speaking"
+  conversationMode: ConversationMode
+  conversationState: ConversationState
   autoListenDelay: number
   onToggleConversation: () => void
   onEmergencyStop: () => void
