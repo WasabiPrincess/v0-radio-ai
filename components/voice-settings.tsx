@@ -7,10 +7,15 @@ import { Slider } from "@/components/ui/slider"
 import { Settings, VolumeX, Volume2, Heart, Smile, Zap, Briefcase, User } from "lucide-react"
 import { useState } from "react"
 
+type VoiceOption = {
+  id: string
+  label: string
+}
+
 interface VoiceSettingsProps {
-  voices: SpeechSynthesisVoice[]
-  selectedVoice: SpeechSynthesisVoice | null
-  onVoiceChange: (voice: SpeechSynthesisVoice) => void
+  voices: VoiceOption[]
+  selectedVoiceId: string | null
+  onVoiceChange: (voiceId: string) => void
   rate: number
   onRateChange: (rate: number) => void
   pitch: number
@@ -33,7 +38,7 @@ const emotionOptions = [
 
 export function VoiceSettings({
   voices,
-  selectedVoice,
+  selectedVoiceId,
   onVoiceChange,
   rate,
   onRateChange,
@@ -47,9 +52,6 @@ export function VoiceSettings({
   onStop,
 }: VoiceSettingsProps) {
   const [isOpen, setIsOpen] = useState(false)
-
-  const japaneseVoices = voices.filter((voice) => voice.lang.startsWith("ja"))
-  const otherVoices = voices.filter((voice) => !voice.lang.startsWith("ja"))
 
   return (
     <div className="relative">
@@ -102,36 +104,18 @@ export function VoiceSettings({
             <div className="space-y-2">
               <label className="text-white text-sm">音声</label>
               <Select
-                value={selectedVoice?.name || ""}
-                onValueChange={(value) => {
-                  const voice = voices.find((v) => v.name === value)
-                  if (voice) onVoiceChange(voice)
-                }}
+                value={selectedVoiceId || ""}
+                onValueChange={(value) => onVoiceChange(value)}
               >
                 <SelectTrigger className="bg-white/10 border-white/20 text-white">
                   <SelectValue placeholder="音声を選択" />
                 </SelectTrigger>
                 <SelectContent>
-                  {japaneseVoices.length > 0 && (
-                    <>
-                      <div className="px-2 py-1 text-sm font-medium text-muted-foreground">日本語</div>
-                      {japaneseVoices.map((voice) => (
-                        <SelectItem key={voice.name} value={voice.name}>
-                          {voice.name}
-                        </SelectItem>
-                      ))}
-                    </>
-                  )}
-                  {otherVoices.length > 0 && (
-                    <>
-                      <div className="px-2 py-1 text-sm font-medium text-muted-foreground">その他</div>
-                      {otherVoices.slice(0, 10).map((voice) => (
-                        <SelectItem key={voice.name} value={voice.name}>
-                          {voice.name} ({voice.lang})
-                        </SelectItem>
-                      ))}
-                    </>
-                  )}
+                  {voices.map((voice) => (
+                    <SelectItem key={voice.id} value={voice.id}>
+                      {voice.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

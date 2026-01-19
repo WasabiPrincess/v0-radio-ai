@@ -5,15 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Mic, MicOff, LogOut, X, Send } from "lucide-react"
 import { ConversationDisplay } from "./conversation-display"
-import { useTextToSpeech } from "@/hooks/use-text-to-speech"
 import Image from "next/image"
 import { GoodbyeModal } from "./goodbye-modal"
-
-interface ChatMessage {
-  role: "user" | "assistant"
-  content: string
-  timestamp: Date
-}
+import type { ChatMessage } from "@/types/chat"
+import type { ConversationMode, ConversationState } from "@/types/conversation"
 
 interface RadioPlayerProps {
   // 番組関連
@@ -22,8 +17,8 @@ interface RadioPlayerProps {
 
   // 会話関連
   isActive: boolean
-  conversationMode: "manual" | "auto"
-  conversationState: "idle" | "listening" | "processing" | "speaking"
+  conversationMode: ConversationMode
+  conversationState: ConversationState
   autoListenDelay: number
   onToggleConversation: () => void
   onEmergencyStop: () => void
@@ -45,6 +40,8 @@ interface RadioPlayerProps {
 
   // 音声合成関連
   isSpeaking: boolean
+  isTTSSupported: boolean
+  isTTSUnlocked: boolean
 
   // プレイヤー関連
   isPlaying: boolean
@@ -82,30 +79,14 @@ export function RadioPlayer({
   isAILoading,
   aiError,
   isSpeaking,
+  isTTSSupported,
+  isTTSUnlocked,
   currentTrack = "またねcast - 大切な人との記憶を語る時間",
   onExit,
   onSendTranscript,
   onClearTranscript,
 }: RadioPlayerProps) {
-  const [showSettings, setShowSettings] = useState(false)
   const [showGoodbyeModal, setShowGoodbyeModal] = useState(false)
-
-  const {
-    isSupported: isTTSSupported,
-    voices,
-    selectedVoice,
-    setSelectedVoice,
-    rate,
-    setRate,
-    pitch,
-    setPitch,
-    volume: ttsVolume,
-    setVolume: setTTSVolume,
-    emotion,
-    setEmotion,
-    stop: stopSpeaking,
-    isUnlocked,
-  } = useTextToSpeech()
 
   const getStateText = () => {
     if (isSpeaking) return "ふわりが話しています..."
@@ -247,8 +228,8 @@ export function RadioPlayer({
             <span className={isTTSSupported ? "text-[#22a790]" : "text-red-500"}>
               音声合成: {isTTSSupported ? "対応" : "非対応"}
             </span>
-            <span className={isUnlocked ? "text-[#22a790]" : "text-orange-500"}>
-              音声: {isUnlocked ? "有効" : "未初期化"}
+            <span className={isTTSUnlocked ? "text-[#22a790]" : "text-orange-500"}>
+              音声: {isTTSUnlocked ? "有効" : "未初期化"}
             </span>
           </div>
         </Card>

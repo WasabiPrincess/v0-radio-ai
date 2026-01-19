@@ -1,20 +1,38 @@
+import { z } from "zod"
+import { NextResponse } from "next/server"
+import { getGeminiChatEnv } from "@/lib/env.server"
+
+const chatRequestSchema = z.object({
+  message: z.string(),
+  conversationHistory: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string(),
+      }),
+    )
+    .optional(),
+  userName: z.string().optional(),
+})
+
+const REQUEST_TIMEOUT_MS = 20000
+
 export async function POST(request: Request) {
   try {
-    const { message, conversationHistory, userName } = await request.json()
-
-    const groqApiKey = process.env.GROQ_API_KEY
-
-    if (!groqApiKey) {
-      console.error("[v0] GROQ_API_KEYが設定されていません")
-      return Response.json({ error: "GROQ_API_KEYが設定されていません" }, { status: 500 })
+    const parsed = chatRequestSchema.safeParse(await request.json())
+    if (!parsed.success) {
+      return NextResponse.json({ error: "リクエストが不正です" }, { status: 400 })
     }
+
+    const { message, conversationHistory, userName } = parsed.data
+    const { apiKey: geminiApiKey, model: geminiModel } = getGeminiChatEnv()
 
     const aiResponseCount = conversationHistory
       ? conversationHistory.filter((msg: any) => msg.role === "assistant").length
       : 0
 
     if (!message && aiResponseCount > 0) {
-      return Response.json({ error: "メッセージが必要です" }, { status: 400 })
+      return NextResponse.json({ error: "メッセージが必要です" }, { status: 400 })
     }
 
     const displayUserName = userName || "ゲスト"
@@ -118,18 +136,29 @@ export async function POST(request: Request) {
 ※ この締めくくりの言葉の後は、一切何も発言しないでください。
 ※ 新しい質問や話題を提供しないでください。`
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+    const history = (conversationHistory ?? []).map((msg) => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content }],
+    }))
+
+    const userContent = message?.trim() ? message.trim() : "番組を開始してください"
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`,
+      {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${groqApiKey}`,
+        "x-goog-api-key": geminiApiKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          {
-            role: "system",
-            content: `あなたはラジオ番組「またねcast」のパーソナリティAI「ふわり」です。ユーザー（ゲスト）との対話を通じて、故人を客観的に捉える手助けをし、喪失感を軽減することがあなたの役割です。
+        systemInstruction: {
+          parts: [
+            {
+              text: `あなたはラジオ番組「またねcast」のパーソナリティAI「ふわり」です。ユーザー（ゲスト）との対話を通じて、故人を客観的に捉える手助けをし、喪失感を軽減することがあなたの役割です。
 
 【重要】必ず日本語で応答してください。英語や他の言語は一切使用しないでください。
 
@@ -207,33 +236,50 @@ ${aiResponseCount >= 12 ? step13Message : ""}
 - 時々相槌を入れること。
 - 無理に明るくせず、自然な温かさを大切にすること。
 ${aiResponseCount >= 12 ? "\n【再度確認】13回目以降の応答では、新しい質問を一切せず、番組を終了してください。" : ""}`,
-          },
+            },
+          ],
+        },
+        contents: [
+          ...history,
           {
             role: "user",
-            content: message || "番組を開始してください",
+            parts: [{ text: userContent }],
           },
         ],
-        temperature: 0.7,
-        max_tokens: 1024,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+        },
       }),
+      signal: controller.signal,
+    },
+    ).finally(() => {
+      clearTimeout(timeoutId)
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("[v0] Groq API エラー:", response.status, errorText)
-      throw new Error(`Groq API error: ${response.status}`)
+      console.error("[v0] Gemini API エラー:", response.status, errorText)
+      throw new Error(`Gemini API error: ${response.status}`)
     }
 
     const data = await response.json()
-    const text = data.choices[0]?.message?.content
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
 
     if (!text) {
       throw new Error("AI応答が空です")
     }
 
-    return Response.json({ response: text })
+    return NextResponse.json({ response: text })
   } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      console.error("[v0] AI応答エラー: タイムアウト")
+      return NextResponse.json({ error: "AI応答がタイムアウトしました" }, { status: 504 })
+    }
+    if (error instanceof Error && error.message.includes("GEMINI_API_KEY")) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
     console.error("[v0] AI応答エラー:", error)
-    return Response.json({ error: "AI応答の生成に失敗しました" }, { status: 500 })
+    return NextResponse.json({ error: "AI応答の生成に失敗しました" }, { status: 500 })
   }
 }

@@ -3,12 +3,7 @@
 import { Card } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2 } from "lucide-react"
-
-interface ChatMessage {
-  role: "user" | "assistant"
-  content: string
-  timestamp: Date
-}
+import type { ChatMessage } from "@/types/chat"
 
 interface ConversationDisplayProps {
   messages: ChatMessage[]

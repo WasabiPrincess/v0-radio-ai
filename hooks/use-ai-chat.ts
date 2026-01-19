@@ -1,12 +1,7 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
-
-interface ChatMessage {
-  role: "user" | "assistant"
-  content: string
-  timestamp: Date
-}
+import { useState, useCallback, useEffect, useRef } from "react"
+import type { ChatMessage } from "@/types/chat"
 
 export function useAIChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -15,6 +10,7 @@ export function useAIChat() {
   const [isInitialized, setIsInitialized] = useState(false)
   const [initialMessageSpoken, setInitialMessageSpoken] = useState(false)
   const [userName, setUserName] = useState<string>("")
+  const messagesRef = useRef<ChatMessage[]>([])
 
   useEffect(() => {
     if (!isInitialized) {
@@ -23,15 +19,24 @@ export function useAIChat() {
     }
   }, [isInitialized])
 
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
+
   const sendMessage = useCallback(
     async (userMessage: string, userNameOverride?: string): Promise<string | null> => {
+      if (isLoading) {
+        console.warn("[v0] sendMessage: 既にリクエスト中のためスキップします")
+        return null
+      }
+
       const effectiveUserName = userNameOverride || userName
       console.log("[v0] sendMessage呼び出し - userMessage:", userMessage || "(空)", "userName:", effectiveUserName)
 
       setIsLoading(true)
       setError(null)
 
-      let conversationHistory = [...messages]
+      let conversationHistory = [...messagesRef.current]
 
       if (userMessage.trim()) {
         const userChatMessage: ChatMessage = {
@@ -40,7 +45,7 @@ export function useAIChat() {
           timestamp: new Date(),
         }
         setMessages((prev) => [...prev, userChatMessage])
-        conversationHistory = [...messages, userChatMessage]
+        conversationHistory = [...messagesRef.current, userChatMessage]
       }
 
       try {
@@ -83,7 +88,7 @@ export function useAIChat() {
         setIsLoading(false)
       }
     },
-    [messages, userName],
+    [isLoading, userName],
   )
 
   const clearMessages = useCallback(() => {

@@ -41,6 +41,8 @@ export default function RadioPage() {
     // 音声合成関連
     isSpeaking,
     isUnlocked,
+    isTTSSupported,
+    ttsNeedsUnlock,
 
     // 操作
     toggleOnAir,
@@ -55,19 +57,24 @@ export default function RadioPage() {
     unlockAudio,
   } = useRadioConversation()
 
-  // iOS/Safariの検出
-  const isIOSSafari =
+  // iOS端末の検出（Safari/Chrome含む）
+  const isIOS =
     typeof window !== "undefined" &&
-    /iPhone|iPad|iPod/.test(navigator.userAgent) &&
-    /Safari/.test(navigator.userAgent) &&
-    !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent)
+    (/iPhone|iPad|iPod/.test(navigator.userAgent) ||
+      (navigator.userAgent.includes("Mac") && navigator.maxTouchPoints > 1))
 
-  // デスクトップやAndroidでは自動的にオーバーレイを非表示
+  // iOSではオーバーレイを表示、その他は基本非表示
   useEffect(() => {
-    if (!isIOSSafari) {
-      setShowUnlockOverlay(false)
+    setShowUnlockOverlay(isIOS)
+  }, [isIOS])
+
+  useEffect(() => {
+    if (ttsNeedsUnlock) {
+      setShowUnlockOverlay(true)
     }
-  }, [isIOSSafari])
+  }, [ttsNeedsUnlock])
+
+  const isOverlayVisible = showUnlockOverlay || ttsNeedsUnlock
 
   // 音声アンロック & 会話開始ハンドラー
   const handleStartWithAudio = async () => {
@@ -110,7 +117,7 @@ export default function RadioPage() {
 
   // デスクトップ/Androidでは自動開始（従来の挙動）
   useEffect(() => {
-    if (!isIOSSafari && !hasStartedConversation && userName) {
+    if (!isIOS && !ttsNeedsUnlock && !hasStartedConversation && userName) {
       console.log("[v0-Radio] 非iOS - 自動で会話を開始します")
       setHasStartedConversation(true)
 
@@ -122,13 +129,13 @@ export default function RadioPage() {
         startConversation(userName)
       }, 1000)
     }
-  }, [isIOSSafari, hasStartedConversation, userName, isOnAir, toggleOnAir, startConversation])
+  }, [isIOS, ttsNeedsUnlock, hasStartedConversation, userName, isOnAir, toggleOnAir, startConversation])
 
   useEffect(() => {
-    if (!isOnAir && !showUnlockOverlay) {
+    if (!isOnAir && !isOverlayVisible) {
       toggleOnAir()
     }
-  }, [isOnAir, showUnlockOverlay, toggleOnAir])
+  }, [isOnAir, isOverlayVisible, toggleOnAir])
 
   // 時間更新のシミュレーション
   useEffect(() => {
@@ -157,8 +164,8 @@ export default function RadioPage() {
 
   return (
     <>
-      {/* iOS Safari用の音声アンロックオーバーレイ */}
-      {showUnlockOverlay && isIOSSafari && (
+      {/* 音声アンロックオーバーレイ */}
+      {isOverlayVisible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#eef4f4] px-4">
           <div className="text-center space-y-6 max-w-md">
             <div className="flex justify-center">
@@ -175,7 +182,7 @@ export default function RadioPage() {
                 音声を有効にしてください
               </h2>
               <p className="text-sm text-gray-600 text-balance">
-                iPhoneでは音声を再生する前に、
+                この端末では音声を再生する前に、
                 <br />
                 ユーザー操作が必要です。
                 <br />
@@ -236,6 +243,8 @@ export default function RadioPage() {
         aiError={aiError}
         // 音声合成関連
         isSpeaking={isSpeaking}
+        isTTSSupported={isTTSSupported}
+        isTTSUnlocked={isUnlocked}
         // プレイヤー関連
         isPlaying={isPlaying}
         onPlayToggle={handlePlayToggle}
